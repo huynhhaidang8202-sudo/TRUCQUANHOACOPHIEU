@@ -15,7 +15,7 @@ st.set_page_config(
     layout="wide"
 )
 st.image("logo.jpg")
-st.title("📈 PHÂN TÍCH GIÁ CỔ PHIẾU VÀ KIỂM ĐỊNH MANN-KENDALL")
+st.title("📈 TRỰC QUAN GIÁ CỔ PHIẾU VÀ KIỂM ĐỊNH MANN-KENDALL_Đề tài 4_Huỳnh Hải Đăng")
 
 # =============================
 # SIDEBAR
