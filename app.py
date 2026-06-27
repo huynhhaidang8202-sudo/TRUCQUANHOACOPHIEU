@@ -1,141 +1,70 @@
-import streamlit as st
-import yfinance as yf
-import pandas as pd
-import pymannkendall as mk
-import matplotlib.pyplot as plt
+figsize=(12,6),
+        title=f"{ticker}",
+        returnfig=True
+    )
 
-# =============================
-# CẤU HÌNH TRANG
-# =============================
-st.set_page_config(
-    page_title="Kiểm định Mann-Kendall",
-    page_icon="📈",
-    layout="centered"
-)
+    st.pyplot(fig2)
 
-st.title("📈 KIỂM ĐỊNH XU HƯỚNG GIÁ CỔ PHIẾU BẰNG MANN-KENDALL")
+    # =============================
+    # KIỂM ĐỊNH MANN-KENDALL
+    # =============================
 
-st.write(
-    """
-Ứng dụng sử dụng kiểm định **Mann-Kendall** để xác định
-giá cổ phiếu có xu hướng tăng, giảm hay không có xu hướng.
-"""
-)
+    close_prices = df["Close"].dropna().reset_index(drop=True)
 
-# =============================
-# NHẬP THÔNG TIN
-# =============================
+    result = mk.original_test(close_prices)
 
-ticker = st.text_input(
-    "Nhập mã cổ phiếu:",
-    value="VCB.VN"
-)
+    st.subheader("Kết quả kiểm định Mann-Kendall")
 
-start_date = st.date_input(
-    "Ngày bắt đầu",
-    value=pd.to_datetime("2024-01-01")
-)
+    col1, col2 = st.columns(2)
 
-end_date = st.date_input(
-    "Ngày kết thúc",
-    value=pd.to_datetime("2026-06-27")
-)
+    with col1:
 
-# =============================
-# NÚT THỰC HIỆN
-# =============================
-
-if st.button("Thực hiện kiểm định"):
-
-    try:
-
-        with st.spinner("Đang tải dữ liệu..."):
-
-            df = yf.download(
-                ticker,
-                start=start_date,
-                end=end_date,
-                progress=False
-            )
-
-        if df.empty:
-            st.error("Không tìm thấy dữ liệu.")
-            st.stop()
-
-        # Nếu cột dạng MultiIndex thì bỏ level ticker
-        if isinstance(df.columns, pd.MultiIndex):
-            df.columns = df.columns.droplevel("Ticker")
-
-        close_price = df["Close"]
-
-        # =============================
-        # VẼ BIỂU ĐỒ
-        # =============================
-
-        fig, ax = plt.subplots(figsize=(10,5))
-
-        ax.plot(
-            close_price,
-            color="blue",
-            linewidth=2
+        st.metric(
+            "Trend",
+            result.trend
         )
 
-        ax.set_title(f"Giá cổ phiếu {ticker}")
-        ax.set_xlabel("Ngày")
-        ax.set_ylabel("Giá")
-        ax.grid(True)
+        st.metric(
+            "Tau",
+            round(result.Tau,4)
+        )
 
-        st.pyplot(fig)
+    with col2:
 
-        # =============================
-        # KIỂM ĐỊNH
-        # =============================
+        st.metric(
+            "p-value",
+            round(result.p,6)
+        )
 
-        result = mk.original_test(close_price)
+        st.metric(
+            "Variance S",
+            round(result.var_s,2)
+        )
 
-        st.subheader("Kết quả kiểm định")
+    st.markdown("---")
 
-        st.write(f"**Trend:** {result.trend}")
-        st.write(f"**p-value:** {result.p:.6f}")
-        st.write(f"**Tau:** {result.Tau:.4f}")
-        st.write(f"**S:** {result.s}")
-        st.write(f"**Variance of S:** {result.var_s:.2f}")
-        st.write(f"**Z:** {result.z:.4f}")
+    if result.p < 0.05:
 
-        # =============================
-        # DIỄN GIẢI
-        # =============================
+        if result.trend == "increasing":
 
-        st.subheader("Diễn giải")
-
-        if result.p < 0.05:
-
-            if result.trend == "increasing":
-                st.success(
-                    "Có xu hướng tăng có ý nghĩa thống kê (p < 0.05)."
-                )
-
-            elif result.trend == "decreasing":
-                st.success("Có xu hướng giảm có ý nghĩa thống kê (p < 0.05)."
-                )
-
-            else:
-                st.success(
-                    "Có xu hướng đáng kể về mặt thống kê."
-                )
-
-        else:
-            st.warning(
-                "Không phát hiện xu hướng có ý nghĩa thống kê (p ≥ 0.05)."
+            st.success(
+                "Có xu hướng TĂNG có ý nghĩa thống kê (p < 0.05)."
             )
 
-        # =============================
-        # HIỂN THỊ DỮ LIỆU
-        # =============================
+        elif result.trend == "decreasing":
 
-        st.subheader("Dữ liệu")
+            st.success(
+                "Có xu hướng GIẢM có ý nghĩa thống kê (p < 0.05)."
+            )
 
-        st.dataframe(df)
+        else:
 
-    except Exception as e:
-        st.error(e)
+            st.success(
+                "Có xu hướng đáng kể về mặt thống kê."
+            )
+
+    else:
+
+        st.warning(
+            "Không phát hiện xu hướng có ý nghĩa thống kê."
+        )
